@@ -1,0 +1,155 @@
+---
+title: "Water Potability Analysis of Hong Kong Rivers"
+output: html_document
+date: "2023-04-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+# Packages
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+
+
+# Water quality metrics for 3276 different water bodies dataset
+data <- read.csv("~/Downloads/water_potability.csv") 
+# Water samples from rivers in Hong-Kong
+hkwater <- read.csv("~/Downloads/river-historical-1986_2020-en.csv") 
+
+#Load dataframe
+head(data)
+head(hkwater)
+
+#Finding the correlation
+ggplot(data, aes(x = ph, fill = factor(Potability))) +
+  geom_histogram(binwidth = 0.2, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: PH")
+
+ggplot(data, aes(x = Hardness, fill = factor(Potability))) +
+  geom_histogram(binwidth = 5, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Hardness")
+
+ggplot(data, aes(x = Solids, fill = factor(Potability))) +
+  geom_histogram(binwidth = 1000, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Solids")
+
+ggplot(data, aes(x = Chloramines, fill = factor(Potability))) +
+  geom_histogram(binwidth = 0.5, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Chloramines")
+
+ggplot(data, aes(x = Sulfate, fill = factor(Potability))) +
+  geom_histogram(binwidth = 5, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Sulfate")
+
+ggplot(data, aes(x = Conductivity, fill = factor(Potability))) +
+  geom_histogram(binwidth = 5, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Conductivity")
+
+ggplot(data, aes(x = Organic_carbon, fill = factor(Potability))) +
+  geom_histogram(binwidth = 0.5, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Organic Carbon")
+
+ggplot(data, aes(x = Trihalomethanes, fill = factor(Potability))) +
+  geom_histogram(binwidth = 5, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Trihalomethanes")
+
+ggplot(data, aes(x = Turbidity, fill = factor(Potability))) +
+  geom_histogram(binwidth = 0.2, alpha = 0.5, position = "identity") +
+  ggtitle("Factors Affecting Water Quality: Turbidity")
+
+#Correlation 
+ggplot(data, aes(x = factor(Potability))) +
+  geom_bar() + labs(x = "Potability", y = "Count", title = "Distribution of Unsafe and Safe Water")
+correlation <- cor(data, use = "complete.obs")
+correlation[order(correlation[,"ph"], decreasing = TRUE), "ph"]
+
+
+
+
+
+```
+Random Forest Model
+```{r}
+#Packages
+library(caret)
+library(lattice)
+library(randomForest)
+set.seed(1)
+
+#Match variables that is in the Hong Kong dataset
+data <- select(data, c(Potability, ph, Solids, Turbidity, Conductivity, Organic_carbon))
+
+# Prepare data for model training
+data$Potability <- as.factor(data$Potability)
+splitIndex <- createDataPartition(data$Potability, p = 0.8, list = FALSE, times = 1)
+trainData <- data[splitIndex,]
+testData <- data[-splitIndex,]
+
+# Remove missing values from trainData using na.exclude()
+trainData <- na.exclude(trainData)
+data <- na.exclude(data)
+
+# Train the random forest model
+control <- trainControl(method = "cv", number = 10)
+model <- train(Potability ~ .,
+               data = trainData,
+               method = "rf",
+               trControl = control,
+               tuneLength = 3)
+
+# Evaluate the model
+predictions <- predict(model, newdata = testData)
+confusionMatrix(predictions, testData$Potability)
+
+# Predict on the original data
+predict_on_data <- predict(model, newdata = data, na.action = na.pass)
+data_with_predictions <- cbind(data, Prediction = predict_on_data)
+data_with_predictions
+```
+
+Matching the dataset with local Hong Kong river water
+```{r}
+#The variables with correlation
+data <- select(data, c(Potability, ph, Solids, Turbidity, Conductivity, Organic_carbon))
+
+# Matching available variables from the two dataset
+hkwater <- hkwater |> filter(year(Dates) == 2020)
+filtered_hkwater <- select(hkwater, c(Water.Control.Zone, River, Station, pH, Total.Solids..mg.L., Turbidity..NTU., Conductivity..μS.cm., Total.Organic.Carbon..mg.L.)) 
+
+#Match variable names from the two dataset
+filtered_hkwater <- rename(filtered_hkwater,
+                           ph = pH,
+                           Solids = Total.Solids..mg.L.,
+                           Turbidity = Turbidity..NTU.,
+                           Conductivity = Conductivity..μS.cm.,
+                           Organic_carbon = Total.Organic.Carbon..mg.L.)
+#Match mismatched datatype from the two datasets
+filtered_hkwater <- transform(filtered_hkwater,
+                    Solids=as.double(Solids),
+                    Organic_carbon=as.double(Organic_carbon))
+
+# Remove missing values from filtered_hkwater 
+filtered_hkwater <- na.exclude(filtered_hkwater)
+
+
+# Predict potability of the samples in the Hong Kong river dataset
+predict_on_hkdata <- predict(model, newdata = filtered_hkwater, na.action = na.pass)
+hkdata_with_predictions <- cbind(filtered_hkwater, Potability = predict_on_hkdata)
+hkdata_with_predictions
+
+
+count <- sum(hkdata_with_predictions$Potability == 1)
+count
+```
+
+```{r}
+
+```
+
