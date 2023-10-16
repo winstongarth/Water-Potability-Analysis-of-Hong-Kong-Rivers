@@ -4,17 +4,11 @@ This project analyzes water quality metrics from different water bodies and appl
 Setup
 The following R packages are required:
 
-dplyr
-ggplot2
-tidyr
-lubridate
-caret
-lattice
-randomForest
+dplyr,ggplot2,tidyr,lubricate, caret, lattice, and randomForest
 The datasets used in this project are:
 
 water_potability.csv: A global water quality dataset containing water quality metrics for 3276 different water bodies.
-river-historical-1986_2020-en.csv: A dataset containing water samples data from rivers in Hong Kong from 1986 to 2020.
+river-historical-1986_2020-en.csv: A dataset containing  water samples data from rivers in Hong Kong from 1986 to 2020.
 Data Exploration and Visualization
 The script includes a comprehensive data exploration and visualization section. Histograms are generated for various water quality metrics such as pH, Hardness, Solids, Chloramines, Sulfate, Conductivity, Organic Carbon, Trihalomethanes, and Turbidity. Each of these metrics is visualized against the Potability variable to identify potential patterns or trends.
 
