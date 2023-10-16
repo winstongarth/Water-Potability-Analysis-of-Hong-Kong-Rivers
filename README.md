@@ -1,4 +1,4 @@
-Water Potability Analysis of Hong Kong Rivers
+Water Potability Analysis of Hong Kong Rivers.
 
 This project analyzes water quality metrics from different water bodies and applies a machine learning model (Random Forest) to predict the potability of water samples taken from various rivers in Hong Kong.
 
